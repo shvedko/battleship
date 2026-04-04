@@ -208,16 +208,33 @@ func (g *game) compress(b []byte) []byte {
 }
 
 func (g *game) decompress(b []byte) []byte {
+	if len(b) < fieldSize*2 {
+		return nil
+	}
+
 	b = g.fields[0].decompress(b)
 	b = g.fields[1].decompress(b)
+
+	if len(b) < 5 {
+		return nil
+	}
 
 	var s, m, h int
 	s, g.kill, g.deck, g.hard, m = int(b[0]), int(b[1]), int(b[2]), int(b[3]), int(b[4])
 	b = b[5:]
+
+	if len(b) < m {
+		return nil
+	}
+
 	g.ship = make(map[int]int, m)
 	for i := 1; i <= m; i++ {
 		g.ship[i] = int(b[0])
 		b = b[1:]
+	}
+
+	if len(b) < 1 {
+		return nil
 	}
 
 	var p point

@@ -9,7 +9,7 @@ func benchmark(b *testing.B, a int) {
 	var n, c int
 	for i := 0; i < b.N; i++ {
 		var g game
-		g.initialize(a, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1)
+		g.initialize(a, 4, 3, 3, 2, 2, 2)
 		for g.alive() {
 			p := g.answer()
 			n += len(p)
@@ -23,7 +23,7 @@ func benchmark(b *testing.B, a int) {
 func Benchmark_game(b *testing.B) {
 	for i, n := range []string{"Random", "Weight"} {
 		b.Run(n, func(b *testing.B) {
-			benchmark(b, i%2)
+			benchmark(b, i)
 		})
 	}
 }

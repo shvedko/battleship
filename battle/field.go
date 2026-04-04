@@ -215,6 +215,11 @@ func (f *field) weight(n int, m map[int]int) point {
 	for i := range t {
 		for j := range &t[i] {
 			v := t.raw(j, i) - 1
+			if m[4] > 0 || m[3] > 0 {
+				if (j+i)%2 == 0 {
+					v += 2
+				}
+			}
 			switch {
 			case v > u:
 				u = v
@@ -263,8 +268,8 @@ func (f *field) decompress(b []byte) []byte {
 		return nil
 	}
 	n := 0
-	for i := 0; i < 10; i++ {
-		for j := 0; j < 10; j += 2 {
+	for i := range f {
+		for j := 0; j < len(f[i]); j += 2 {
 			val := b[n]
 			f[i][j] = int(val >> 4)
 			f[i][j+1] = int(val & 0x0F)
