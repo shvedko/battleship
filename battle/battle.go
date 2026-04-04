@@ -1,59 +1,46 @@
 package battle
 
-import (
-	"sync"
-
-	"github.com/google/uuid"
-)
+type Answer interface {
+	Next() bool
+	F() int
+	X() int
+	Y() int
+	C() int
+	H() []byte
+}
 
 type Battle interface {
-	Begin(id uuid.UUID) []point
-	Click(id uuid.UUID, x, y int) []point
-	Reset(id uuid.UUID)
+	Begin() Answer
+	Click(x, y int, p []byte) Answer
+	Reset()
 }
 
 type battle struct {
-	mutex sync.Mutex
-	games map[uuid.UUID]*game
 	sizes []int
 	level int
 }
 
 func New(level int, sizes ...int) Battle {
 	return &battle{
-		mutex: sync.Mutex{},
-		games: map[uuid.UUID]*game{},
 		sizes: sizes,
 		level: level,
 	}
 }
 
-func (b *battle) get(id uuid.UUID) *game {
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
-	g, ok := b.games[id]
-	if !ok {
-		g = &game{}
-		g.initialize(b.level, b.sizes...)
-		b.games[id] = g
-	}
+func (b *battle) begin() *game {
+	g := &game{}
+	g.initialize(b.level, b.sizes...)
 	return g
 }
 
-func (b *battle) remove(id uuid.UUID) {
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
-	delete(b.games, id)
+func (b *battle) unpack(p []byte) *game {
+	g := &game{}
+	p = g.decompress(p)
+	return g
 }
 
-func (b *battle) Begin(id uuid.UUID) []point {
-	return b.get(id).Field()
-}
+func (b *battle) Begin() Answer { return b.begin().Field() }
 
-func (b *battle) Reset(id uuid.UUID) {
-	b.remove(id)
-}
+func (b *battle) Click(x, y int, p []byte) Answer { return b.unpack(p).Click(x, y) }
 
-func (b *battle) Click(id uuid.UUID, x, y int) []point {
-	return b.get(id).Click(x, y)
-}
+func (b *battle) Reset() {}

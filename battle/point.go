@@ -28,3 +28,14 @@ func (p point) XYZ() (int, int, bool) {
 	}
 	return p.X(), p.Y(), true
 }
+
+func (p point) compress(b []byte) []byte {
+	u := uint16(p)
+	return append(b, byte(u>>8), byte(u&0xFF))
+}
+
+func (p *point) decompress(b []byte) []byte {
+	u := uint16(b[0])<<8 | uint16(b[1])
+	*p = point(u)
+	return b[2:]
+}

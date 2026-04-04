@@ -1,88 +1,71 @@
 package api
 
 import (
-	"context"
-	"encoding/gob"
-
-	//"encoding/gob"
 	"encoding/json"
 	"log"
-	"math/rand"
 	"net/http"
-	"time"
 
-	"github.com/google/uuid"
-	"github.com/gorilla/sessions"
 	"github.com/pshvedko/battleship/api/websocket"
 	"github.com/pshvedko/battleship/battle"
 )
 
-func init() {
-	rand.Seed(time.Now().Unix())
-	gob.Register(uuid.UUID{})
-}
-
 type Application struct {
 	Logging *log.Logger
-	Session sessions.Store
 	Service battle.Battle
 }
 
-func (a *Application) SessionMiddleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, err := a.Session.Get(r, "session")
-		for err == nil {
-			sid, ok := session.Values["sid"]
-			if !ok {
-				sid = uuid.New()
-				session.Options.SameSite = http.SameSiteLaxMode
-				session.Options.HttpOnly = true
-				session.Values["sid"] = sid
-				err = session.Save(r, w)
-				if err != nil {
-					break
-				}
-			}
-			h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), "sid", sid)))
-			return
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-	})
+type state struct {
+	H []byte `json:"H,omitempty"`
 }
 
 type point struct {
-	X int
-	Y int
+	X int `json:"X"`
+	Y int `json:"Y"`
+}
+
+type query struct {
+	point
+	state
 }
 
 type reply struct {
 	point
-	F int
-	C int
+	F int `json:"F"`
+	C int `json:"C"`
+	state
 }
 
 func (a *Application) Begin(w websocket.ResponseWriter, r *websocket.Request) {
-	s := r.Context().Value("sid").(uuid.UUID)
 	j := json.NewEncoder(w)
-	for _, p := range a.Service.Begin(s) {
-		w.WriteHeader(http.StatusOK)
-		j.Encode(reply{F: p.F(), point: point{X: p.X(), Y: p.Y()}, C: p.C()})
+	p := a.Service.Begin()
+	if p == nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+	} else {
+		for p.Next() {
+			w.WriteHeader(http.StatusOK)
+			v := reply{F: p.F(), point: point{X: p.X(), Y: p.Y()}, C: p.C(), state: state{H: p.H()}}
+			j.Encode(v)
+		}
 	}
 }
 
 func (a *Application) Click(w websocket.ResponseWriter, r *websocket.Request) {
-	s := r.Context().Value("sid").(uuid.UUID)
-	var q point
+	var q query
 	json.NewDecoder(r.Body).Decode(&q)
 	j := json.NewEncoder(w)
-	for _, p := range a.Service.Click(s, q.X, q.Y) {
-		w.WriteHeader(http.StatusOK)
-		j.Encode(reply{F: p.F(), point: point{X: p.X(), Y: p.Y()}, C: p.C()})
+	p := a.Service.Click(q.X, q.Y, q.H)
+	if p == nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+	} else {
+		for p.Next() {
+			w.WriteHeader(http.StatusOK)
+			v := reply{F: p.F(), point: point{X: p.X(), Y: p.Y()}, C: p.C(), state: state{H: p.H()}}
+			j.Encode(v)
+		}
 	}
 }
 
 func (a *Application) Reset(w websocket.ResponseWriter, r *websocket.Request) {
-	s := r.Context().Value("sid").(uuid.UUID)
-	a.Service.Reset(s)
+	a.Service.Reset()
 	w.WriteHeader(http.StatusOK)
 }

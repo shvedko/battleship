@@ -84,7 +84,7 @@
         }
     }
 
-    function query(done, id, method = 'GET', path = '/', body = '') {
+    function query(done, id, method = 'GET', path = '/', body) {
         socket.send([id.toString(), method, path, JSON.stringify(body)].join('\r\n'))
         handle.set(id.toString(), done)
     }
@@ -105,22 +105,28 @@
         for (const i of click) {
             i.className = i.className.toString().split(' ')[0]
         }
-        query(onNewReply, seq++, 'GET', '/click', {X: x, Y: y})
+        query(onNewReply, seq++, 'GET', '/click', {X: x, Y: y, H: history.at(-1)})
     }
 
     function onNewReply(e) {
         onReply(e, 'new')
     }
 
+    let history = []
+
     function onReply(e = {
         F: -1,
         X: -1,
         Y: -1,
         C: -1,
+        H: ''
     }, mod = '') {
         if (e.F === -1)
             return
         let style = [clazz[e.C]]
+        if (e.H) {
+            history.push(e.H)
+        }
         if (e.C === 2 || e.C === 3) {
             style.push(mod)
             click.push(field[e.F][e.Y][e.X])

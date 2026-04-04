@@ -245,3 +245,31 @@ func (f *field) random(n int) point {
 	}
 	return -1
 }
+
+func (f *field) compress(b []byte) []byte {
+	for i := range f {
+		for j := 0; j < len(f[i]); j += 2 {
+			val := byte(f[i][j])<<4 | byte(f[i][j+1])
+			b = append(b, val)
+		}
+	}
+	return b
+}
+
+const fieldSize = len(field{}) * len(field{}[0]) >> 1
+
+func (f *field) decompress(b []byte) []byte {
+	if len(b) < fieldSize {
+		return nil
+	}
+	n := 0
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 10; j += 2 {
+			val := b[n]
+			f[i][j] = int(val >> 4)
+			f[i][j+1] = int(val & 0x0F)
+			n++
+		}
+	}
+	return b[n:]
+}
