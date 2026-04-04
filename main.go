@@ -17,7 +17,6 @@ import (
 var h embed.FS
 
 func main() {
-	_ = []byte("TODO_SUPER_SECRET_KEY_1234567890")
 	a := api.Application{
 		Service: battle.New(1, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1),
 		Logging: log.New(os.Stderr, "", log.LstdFlags),
