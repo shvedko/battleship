@@ -1,8 +1,6 @@
 package battle
 
-import (
-	"math/rand"
-)
+import "math/rand"
 
 const (
 	fieldFree = iota
@@ -10,17 +8,19 @@ const (
 	fieldMiss
 	fieldShot
 	fieldOpen
+
+	fieldSize = len(field{}) * len(field{}[0]) >> 1
 )
 
-type field [10][10]int
+type field [10][10]uint8
 
-func (f *field) initialize(sizes ...int) {
+func (f *field) initialize(sizes ...uint8) {
 	for _, size := range sizes {
 		f.add(size)
 	}
 }
 
-func (f *field) add(size int) {
+func (f *field) add(size uint8) {
 	var h = [4]int{0, 0, 1, -1}
 	var w = [4]int{1, -1, 0, 0}
 	for {
@@ -33,7 +33,7 @@ func (f *field) add(size int) {
 	}
 }
 
-func (f *field) try(x int, y int, h int, w int, c int) bool {
+func (f *field) try(x int, y int, h int, w int, c uint8) bool {
 	if c == 0 {
 		return true
 	} else if f.border(x, y) {
@@ -64,7 +64,7 @@ func (f *field) zero(x, y int) bool {
 }
 
 func (f *field) point(n, x, y int) point {
-	return point(x*10*10*10 + y*10*10 + f.raw(x, y)*10 + n)
+	return point(x*10*10*10 + y*10*10 + int(f.raw(x, y))*10 + n)
 }
 
 func (f *field) shot(n, x, y int) (points []point, hit bool) {
@@ -104,7 +104,7 @@ func (f *field) around(n, x, y int) (points []point) {
 	}
 	if w != nil && h != nil {
 		*w--
-		var a, b int
+		var a, b uint8
 		for a = f.get(x, y); a == fieldShot; a = f.get(x, y) {
 			*w--
 		}
@@ -137,14 +137,14 @@ func (f *field) around(n, x, y int) (points []point) {
 	return
 }
 
-func (f *field) get(x int, y int) int {
+func (f *field) get(x, y int) uint8 {
 	if f.border(x, y) {
 		return 0
 	}
 	return f.raw(x, y)
 }
 
-func (f *field) update(a, b, n, x, y int) (points []point) {
+func (f *field) update(a, b uint8, n, x, y int) (points []point) {
 	if f.border(x, y) {
 		return
 	} else if f.raw(x, y) != a {
@@ -158,15 +158,15 @@ func (f *field) border(x int, y int) bool {
 	return x < 0 || x >= len(f) || y < 0 || y >= len(f)
 }
 
-func (f *field) raw(x int, y int) int {
+func (f *field) raw(x int, y int) uint8 {
 	return f[y][x]
 }
 
-func (f *field) set(x int, y int, i int) {
+func (f *field) set(x int, y int, i uint8) {
 	f[y][x] = i
 }
 
-func (f *field) change(x int, y int, i int) (ok bool) {
+func (f *field) change(x int, y int, i uint8) (ok bool) {
 	if ok = f.raw(x, y) < i; ok {
 		f[y][x] += i
 	}
@@ -177,7 +177,7 @@ func (f *field) target(x int, y int) bool {
 	return !f.border(x, y) && f.raw(x, y) < fieldMiss
 }
 
-func (f *field) apply(x int, y int, h int, w int, c int) bool {
+func (f *field) apply(x int, y int, h int, w int, c uint8) bool {
 	if c == 0 {
 		return true
 	} else if f.get(x, y) > 0 && f.apply(x+h, y+w, h, w, c-1) {
@@ -187,7 +187,7 @@ func (f *field) apply(x int, y int, h int, w int, c int) bool {
 	return false
 }
 
-func (f *field) dispose(c int) {
+func (f *field) dispose(c uint8) {
 	for i := range f {
 		for j := range &f[i] {
 			f.apply(j, i, 0, 1, c)
@@ -196,7 +196,7 @@ func (f *field) dispose(c int) {
 	}
 }
 
-func (f *field) weight(n int, m map[int]int) point {
+func (f *field) weight(n int, m map[uint8]uint8) point {
 	var t field
 	for i := range f {
 		for j := range &f[i] {
@@ -210,7 +210,7 @@ func (f *field) weight(n int, m map[int]int) point {
 			t.dispose(w)
 		}
 	}
-	var u int
+	var u uint8
 	var a []point
 	for i := range t {
 		for j := range &t[i] {
@@ -254,14 +254,11 @@ func (f *field) random(n int) point {
 func (f *field) compress(b []byte) []byte {
 	for i := range f {
 		for j := 0; j < len(f[i]); j += 2 {
-			val := byte(f[i][j])<<4 | byte(f[i][j+1])
-			b = append(b, val)
+			b = append(b, f[i][j]<<4|f[i][j+1])
 		}
 	}
 	return b
 }
-
-const fieldSize = len(field{}) * len(field{}[0]) >> 1
 
 func (f *field) decompress(b []byte) []byte {
 	if len(b) < fieldSize {
@@ -270,9 +267,7 @@ func (f *field) decompress(b []byte) []byte {
 	n := 0
 	for i := range f {
 		for j := 0; j < len(f[i]); j += 2 {
-			val := b[n]
-			f[i][j] = int(val >> 4)
-			f[i][j+1] = int(val & 0x0F)
+			f[i][j], f[i][j+1] = b[n]>>4, b[n]&0x0F
 			n++
 		}
 	}

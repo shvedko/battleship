@@ -1,8 +1,6 @@
 package battle
 
-import (
-	"reflect"
-)
+import "reflect"
 
 type shooter func() (int, int, bool)
 
@@ -13,18 +11,18 @@ func (s shooter) shot() (int, int, bool) {
 type game struct {
 	fields [2]field
 	hits   []point
-	kill   int
-	ship   map[int]int
-	deck   int
-	hard   int
+	kill   uint8
+	ship   map[uint8]uint8
+	deck   uint8
+	hard   uint8
 	shooter
 }
 
-func (g *game) initialize(hard int, sizes ...int) {
+func (g *game) initialize(hard uint8, sizes ...uint8) {
 	g.fields[0].initialize(sizes...)
 	g.fields[1].initialize(sizes...)
 	g.shooter = g.random
-	g.ship = make(map[int]int)
+	g.ship = make(map[uint8]uint8)
 	for _, size := range sizes {
 		g.ship[size]++
 		g.deck += size
@@ -189,14 +187,15 @@ func (g *game) compress(b []byte) []byte {
 	b = g.fields[0].compress(b)
 	b = g.fields[1].compress(b)
 
-	var m int
+	var m uint8
 	for k := range g.ship {
 		m = max(m, k)
 	}
 
-	b = append(b, g.shooterID(), byte(g.kill), byte(g.deck), byte(g.hard), byte(m))
-	for i := 1; i <= m; i++ {
-		b = append(b, byte(g.ship[i]))
+	b = append(b, g.shooterID(), g.kill, g.deck, g.hard, m)
+	for m > 0 {
+		b = append(b, g.ship[m])
+		m--
 	}
 
 	b = append(b, byte(len(g.hits)))
@@ -219,18 +218,19 @@ func (g *game) decompress(b []byte) []byte {
 		return nil
 	}
 
-	var s, m, h int
-	s, g.kill, g.deck, g.hard, m = int(b[0]), int(b[1]), int(b[2]), int(b[3]), int(b[4])
+	var s, m, h uint8
+	s, g.kill, g.deck, g.hard, m = b[0], b[1], b[2], b[3], b[4]
 	b = b[5:]
 
-	if len(b) < m {
+	if len(b) < int(m) {
 		return nil
 	}
 
-	g.ship = make(map[int]int, m)
-	for i := 1; i <= m; i++ {
-		g.ship[i] = int(b[0])
+	g.ship = make(map[uint8]uint8, m)
+	for m > 0 {
+		g.ship[m] = b[0]
 		b = b[1:]
+		m--
 	}
 
 	if len(b) < 1 {
@@ -238,12 +238,22 @@ func (g *game) decompress(b []byte) []byte {
 	}
 
 	var p point
-	h = int(b[0])
+	h = b[0]
 	b = b[1:]
-	g.hits = make([]point, h)
-	for i := 0; i < h; i++ {
+
+	if len(b) < int(h<<1) {
+		return nil
+	}
+
+	g.hits = make([]point, 0, h)
+	for h > 0 {
+		h--
 		b = p.decompress(b)
-		g.hits[i] = p
+		g.hits = append(g.hits, p)
+	}
+
+	if len(b) > 0 {
+		return nil
 	}
 
 	switch s {

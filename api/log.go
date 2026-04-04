@@ -2,10 +2,30 @@ package api
 
 import (
 	"bufio"
+	"io"
 	"net"
 	"net/http"
 	"time"
 )
+
+type Logger interface {
+	SetOutput(io.Writer)
+	Output(int, string) error
+	Print(...any)
+	Printf(string, ...any)
+	Println(...any)
+	Fatal(...any)
+	Fatalf(string, ...any)
+	Fatalln(...any)
+	Panic(...any)
+	Panicf(string, ...any)
+	Panicln(...any)
+	Flags() int
+	SetFlags(int)
+	Prefix() string
+	SetPrefix(string)
+	Writer() io.Writer
+}
 
 type loggingWriter struct {
 	http.ResponseWriter
@@ -51,8 +71,8 @@ func (a *Application) LoggingMiddleware(h http.Handler) http.Handler {
 		l := &loggingWriter{ResponseWriter: w}
 		t := time.Now()
 		h.ServeHTTP(l, r)
-		if a.Logging != nil {
-			a.Logging.Println(r.Method, r.URL, r.Proto, l.Status, l.Length, time.Now().Sub(t))
+		if a.Logger != nil {
+			a.Logger.Println(r.Method, r.URL, r.Proto, l.Status, l.Length, time.Now().Sub(t))
 		}
 	})
 }

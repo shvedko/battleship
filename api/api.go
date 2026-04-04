@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/pshvedko/battleship/api/websocket"
@@ -10,8 +9,8 @@ import (
 )
 
 type Application struct {
-	Logging *log.Logger
-	Service battle.Battle
+	Logger
+	battle.Battle
 }
 
 type state struct {
@@ -37,7 +36,7 @@ type reply struct {
 
 func (a *Application) Begin(w websocket.ResponseWriter, r *websocket.Request) {
 	j := json.NewEncoder(w)
-	p := a.Service.Begin()
+	p := a.Battle.Begin()
 	if p == nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	} else {
@@ -53,7 +52,7 @@ func (a *Application) Click(w websocket.ResponseWriter, r *websocket.Request) {
 	var q query
 	json.NewDecoder(r.Body).Decode(&q)
 	j := json.NewEncoder(w)
-	p := a.Service.Click(q.X, q.Y, q.H)
+	p := a.Battle.Click(q.X, q.Y, q.H)
 	if p == nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	} else {
@@ -66,6 +65,6 @@ func (a *Application) Click(w websocket.ResponseWriter, r *websocket.Request) {
 }
 
 func (a *Application) Reset(w websocket.ResponseWriter, r *websocket.Request) {
-	a.Service.Reset()
+	a.Battle.Reset()
 	w.WriteHeader(http.StatusOK)
 }

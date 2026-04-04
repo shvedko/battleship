@@ -16,31 +16,46 @@ type Battle interface {
 }
 
 type battle struct {
-	sizes []int
-	level int
+	sizes []uint8
+	level uint8
 }
 
-func New(level int, sizes ...int) Battle {
+func New(level uint8, sizes ...uint8) Battle {
 	return &battle{
 		sizes: sizes,
 		level: level,
 	}
 }
 
-func (b *battle) begin() *game {
+func (b *battle) new() *game {
 	g := &game{}
 	g.initialize(b.level, b.sizes...)
 	return g
 }
 
-func (b *battle) unpack(p []byte) *game {
+func (b *battle) get(p []byte) *game {
 	g := &game{}
 	p = g.decompress(p)
+	if p == nil {
+		return nil
+	}
 	return g
 }
 
-func (b *battle) Begin() Answer { return b.begin().Field() }
+func (b *battle) Begin() Answer {
+	g := b.new()
+	if g == nil {
+		return nil
+	}
+	return g.Field()
+}
 
-func (b *battle) Click(x, y int, p []byte) Answer { return b.unpack(p).Click(x, y) }
+func (b *battle) Click(x, y int, p []byte) Answer {
+	g := b.get(p)
+	if g == nil {
+		return nil
+	}
+	return g.Click(x, y)
+}
 
 func (b *battle) Reset() {}

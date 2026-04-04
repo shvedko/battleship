@@ -18,8 +18,8 @@ var h embed.FS
 
 func main() {
 	a := api.Application{
-		Service: battle.New(1, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1),
-		Logging: log.New(os.Stderr, "", log.LstdFlags),
+		Battle: battle.New(1, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1),
+		Logger: log.New(os.Stderr, "", log.LstdFlags),
 	}
 	w := websocket.New()
 	w.HandleFunc("/begin", a.Begin)
