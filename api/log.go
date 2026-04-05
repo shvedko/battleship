@@ -27,20 +27,20 @@ type Logger interface {
 	Writer() io.Writer
 }
 
-type loggingWriter struct {
+type logger struct {
 	http.ResponseWriter
 	header bool
 	Status int
 	Length int
 }
 
-func (w *loggingWriter) Write(b []byte) (n int, err error) {
+func (w *logger) Write(b []byte) (n int, err error) {
 	n, err = w.ResponseWriter.Write(b)
 	w.Length += n
 	return
 }
 
-func (w *loggingWriter) WriteHeader(code int) {
+func (w *logger) WriteHeader(code int) {
 	if w.header {
 		return
 	}
@@ -50,7 +50,7 @@ func (w *loggingWriter) WriteHeader(code int) {
 	return
 }
 
-func (w *loggingWriter) Flush() {
+func (w *logger) Flush() {
 	h, ok := w.ResponseWriter.(http.Flusher)
 	if !ok {
 		return
@@ -58,7 +58,7 @@ func (w *loggingWriter) Flush() {
 	h.Flush()
 }
 
-func (w *loggingWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+func (w *logger) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	h, ok := w.ResponseWriter.(http.Hijacker)
 	if !ok {
 		return nil, nil, http.ErrHijacked
@@ -68,7 +68,7 @@ func (w *loggingWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 func (a *Application) LoggingMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l := &loggingWriter{ResponseWriter: w}
+		l := &logger{ResponseWriter: w}
 		t := time.Now()
 		h.ServeHTTP(l, r)
 		if a.Logger != nil {

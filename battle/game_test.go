@@ -1,34 +1,81 @@
 package battle
 
 import (
+	"math"
 	"reflect"
 	"sync/atomic"
 	"testing"
 )
 
-func benchmark(b *testing.B, a uint8) {
-	var n, m atomic.Int64
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			var g game
-			g.initialize(a, 4, 3, 3, 2, 2, 2)
-			for g.alive() {
-				p := g.answer()
-				n.Add(int64(len(p)))
-				m.Add(int64(1))
-			}
-		}
-	})
-	b.ReportMetric(float64(n.Load())/float64(b.N), "shots/op")
-	b.ReportMetric(float64(m.Load())/float64(b.N), "moves/op")
+func gameOne(h uint8) (n int, m int) {
+	var g game
+	g.initialize(h, 4, 3, 3, 2, 2, 2)
+	for g.alive() {
+		p := g.answer()
+		n += len(p)
+		m++
+	}
+	return
 }
 
 func Benchmark_game(b *testing.B) {
-	for i, n := range map[uint8]string{0: "Random", 1: "Weight"} {
-		b.Run(n, func(b *testing.B) {
-			benchmark(b, i)
+	for i, t := range map[uint8]string{0: "Random", 1: "Weight"} {
+		b.Run(t, func(b *testing.B) {
+			var n, m, s, z atomic.Int64
+			b.RunParallel(func(pb *testing.PB) {
+				for pb.Next() {
+					dn, dm := gameOne(i)
+					n.Add(int64(dn))
+					m.Add(int64(dm))
+					s.Add(int64(dm * dm))
+					z.Add(int64(dn * dn))
+				}
+			})
+			b.ReportMetric(float64(n.Load())/float64(b.N), "shots/op")
+			b.ReportMetric(float64(m.Load())/float64(b.N), "moves/op")
+			b.ReportMetric(math.Sqrt(float64(s.Load())/float64(b.N)-float64(m.Load())/float64(b.N)*float64(m.Load())/float64(b.N)), "σ(moves)")
+			b.ReportMetric(math.Sqrt(float64(z.Load())/float64(b.N)-float64(n.Load())/float64(b.N)*float64(n.Load())/float64(b.N)), "σ(shots)")
 		})
 	}
+}
+
+func gameVersus(h1, h2 uint8, swap bool) (n1 int, n2 int) {
+	var g1, g2 game
+	if swap {
+		h1, h2 = h2, h1
+	}
+	g1.initialize(h1, 4, 3, 3, 2, 2, 2)
+	g2.initialize(h2, 4, 3, 3, 2, 2, 2)
+	g2.fields[0] = g1.fields[0]
+	for {
+		if g1.answer(); g1.end() {
+			n1++
+			break
+		}
+		if g2.answer(); g2.end() {
+			n2++
+			break
+		}
+	}
+	if swap {
+		return n2, n1
+	}
+	return n1, n2
+}
+
+func Benchmark_game_Random_vs_Weight(b *testing.B) {
+	var n1, n2 atomic.Int64
+	b.RunParallel(func(pb *testing.PB) {
+		var i uint
+		for pb.Next() {
+			d1, d2 := gameVersus(0, 1, i&1 == 0)
+			n1.Add(int64(d1))
+			n2.Add(int64(d2))
+			i++
+		}
+	})
+	b.ReportMetric(float64(n1.Load())/float64(b.N)*100, "random")
+	b.ReportMetric(float64(n2.Load())/float64(b.N)*100, "weight")
 }
 
 func Test_game_compress_decompress(t *testing.T) {
