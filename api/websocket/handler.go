@@ -3,12 +3,11 @@ package websocket
 import (
 	"bytes"
 	"crypto/rand"
+	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
 	"strings"
-
-	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 )
 
 type WebSocket struct {

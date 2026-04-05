@@ -87,12 +87,13 @@ func (e *encryptor) H() []byte {
 	if p == nil {
 		return nil
 	}
-	q := make([]byte, e.coder.NonceSize())
-	_, err := rand.Read(q)
+	z := e.coder.NonceSize()
+	q := make([]byte, z, z+len(p))
+	_, err := rand.Read(q[:z])
 	if err != nil {
 		return nil
 	}
-	return e.coder.Seal(q, q, p, e.key)
+	return e.coder.Seal(q[:z], q, p, e.key)
 }
 
 func (b *battle) encrypt(k []byte, a Answer) Answer {
