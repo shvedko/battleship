@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
 type WebSocket struct {
 	u websocket.Upgrader
-	h http.ServeMux
+	h mux.Router
 }
 
 func New() *WebSocket {
