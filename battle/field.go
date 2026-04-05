@@ -214,13 +214,14 @@ func (f *field) weight(n int, m map[uint8]uint8) point {
 	var a []point
 	for i := range t {
 		for j := range &t[i] {
-			v := t.raw(j, i) - 1
+			v := t.raw(j, i)
 			if m[4] > 0 || m[3] > 0 {
-				if (j+i)%2 == 0 {
+				if v > 0 && (j+i)%2 == 0 {
 					v += 2
 				}
 			}
 			switch {
+			case v == 0:
 			case v > u:
 				u = v
 				a = a[:0]

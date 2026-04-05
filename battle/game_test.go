@@ -2,22 +2,25 @@ package battle
 
 import (
 	"reflect"
+	"sync/atomic"
 	"testing"
 )
 
 func benchmark(b *testing.B, a uint8) {
-	var n, c int
-	for i := 0; i < b.N; i++ {
-		var g game
-		g.initialize(a, 4, 3, 3, 2, 2, 2)
-		for g.alive() {
-			p := g.answer()
-			n += len(p)
-			c++
+	var n, m atomic.Int64
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			var g game
+			g.initialize(a, 4, 3, 3, 2, 2, 2)
+			for g.alive() {
+				p := g.answer()
+				n.Add(int64(len(p)))
+				m.Add(int64(1))
+			}
 		}
-	}
-	b.ReportMetric(float64(n)/float64(b.N), "shots/op")
-	b.ReportMetric(float64(c)/float64(b.N), "moves/op")
+	})
+	b.ReportMetric(float64(n.Load())/float64(b.N), "shots/op")
+	b.ReportMetric(float64(m.Load())/float64(b.N), "moves/op")
 }
 
 func Benchmark_game(b *testing.B) {
