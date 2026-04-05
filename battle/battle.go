@@ -59,7 +59,7 @@ func (b *battle) get(p []byte) *game {
 	return g
 }
 
-func (b *battle) decrypt(id []byte, p []byte) []byte {
+func (b *battle) decrypt(k []byte, p []byte) []byte {
 	if b.coder != nil {
 		z := b.coder.NonceSize()
 		if len(p) < z {
@@ -68,7 +68,7 @@ func (b *battle) decrypt(id []byte, p []byte) []byte {
 		var q []byte
 		q, p = p[:z], p[z:]
 		var err error
-		p, err = b.coder.Open(p[:0], q, p, id[:])
+		p, err = b.coder.Open(p[:0], q, p, k[:])
 		if err != nil {
 			return nil
 		}
@@ -78,7 +78,7 @@ func (b *battle) decrypt(id []byte, p []byte) []byte {
 
 type encryptor struct {
 	coder cipher.AEAD
-	salt  []byte
+	key   []byte
 	Answer
 }
 
@@ -92,31 +92,31 @@ func (e *encryptor) H() []byte {
 	if err != nil {
 		return nil
 	}
-	return e.coder.Seal(q, q, p, e.salt)
+	return e.coder.Seal(q, q, p, e.key)
 }
 
-func (b *battle) encrypt(h []byte, a Answer) Answer {
+func (b *battle) encrypt(k []byte, a Answer) Answer {
 	if b.coder != nil {
-		return &encryptor{Answer: a, coder: b.coder, salt: h}
+		return &encryptor{Answer: a, coder: b.coder, key: k}
 	}
 	return a
 }
 
-func (b *battle) Begin(h []byte) Answer {
+func (b *battle) Begin(k []byte) Answer {
 	g := b.new()
 	if g == nil {
 		return nil
 	}
-	return b.encrypt(h, g.Field())
+	return b.encrypt(k, g.Field())
 }
 
-func (b *battle) Click(x int, y int, p []byte, h []byte) Answer {
-	p = b.decrypt(h, p)
+func (b *battle) Click(x int, y int, p []byte, k []byte) Answer {
+	p = b.decrypt(k, p)
 	g := b.get(p)
 	if g == nil {
 		return nil
 	}
-	return b.encrypt(h, g.Click(x, y))
+	return b.encrypt(k, g.Click(x, y))
 }
 
 func (b *battle) Reset([]byte) {}
