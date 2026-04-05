@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"bytes"
+	"crypto/rand"
 	"io"
 	"net/http"
 	"strings"
@@ -20,10 +21,12 @@ func New() *WebSocket {
 }
 
 func (s *WebSocket) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	c, err := s.u.Upgrade(w, r, nil)
+	c, err := s.u.Upgrade(w, r, http.Header{})
 	if err != nil {
 		return
 	}
+	var n [16]byte
+	rand.Read(n[:])
 	defer c.Close()
 	z := make(chan bool, 1)
 	z <- true
@@ -78,6 +81,7 @@ func (s *WebSocket) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				header: http.Header{},
 				dirty:  false,
 				end:    '+',
+				me:     n[:],
 			}, q)
 		}
 	}
@@ -98,6 +102,7 @@ func (s *WebSocket) UpgradeMiddleware(h http.Handler) http.Handler {
 type ResponseWriter interface {
 	http.ResponseWriter
 	http.Flusher
+	ID() []byte
 }
 
 type Request struct {

@@ -1,6 +1,8 @@
 package battle
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type shooter func() (int, int, bool)
 

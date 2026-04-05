@@ -16,10 +16,10 @@ type Answer interface {
 }
 
 type Battle interface {
-	Begin() Answer
-	Click(x, y int, p []byte) Answer
-	Reset()
-	Encryption(k [32]byte) error
+	Begin([]byte) Answer
+	Click(int, int, []byte, []byte) Answer
+	Reset([]byte)
+	Encryption([32]byte) error
 }
 
 type battle struct {
@@ -28,8 +28,8 @@ type battle struct {
 	coder cipher.AEAD
 }
 
-func (b *battle) Encryption(k [32]byte) (err error) {
-	block, err := aes.NewCipher(k[:])
+func (b *battle) Encryption(key [32]byte) (err error) {
+	block, err := aes.NewCipher(key[:])
 	if err != nil {
 		return
 	}
@@ -59,7 +59,7 @@ func (b *battle) get(p []byte) *game {
 	return g
 }
 
-func (b *battle) decrypt(p []byte) []byte {
+func (b *battle) decrypt(id []byte, p []byte) []byte {
 	if b.coder != nil {
 		z := b.coder.NonceSize()
 		if len(p) < z {
@@ -68,7 +68,7 @@ func (b *battle) decrypt(p []byte) []byte {
 		var q []byte
 		q, p = p[:z], p[z:]
 		var err error
-		p, err = b.coder.Open(p[:0], q, p, nil)
+		p, err = b.coder.Open(p[:0], q, p, id[:])
 		if err != nil {
 			return nil
 		}
@@ -78,6 +78,7 @@ func (b *battle) decrypt(p []byte) []byte {
 
 type encryptor struct {
 	coder cipher.AEAD
+	salt  []byte
 	Answer
 }
 
@@ -91,31 +92,31 @@ func (e *encryptor) H() []byte {
 	if err != nil {
 		return nil
 	}
-	return e.coder.Seal(q, q, p, nil)
+	return e.coder.Seal(q, q, p, e.salt)
 }
 
-func (b *battle) encrypt(a Answer) Answer {
+func (b *battle) encrypt(h []byte, a Answer) Answer {
 	if b.coder != nil {
-		return &encryptor{Answer: a, coder: b.coder}
+		return &encryptor{Answer: a, coder: b.coder, salt: h}
 	}
 	return a
 }
 
-func (b *battle) Begin() Answer {
+func (b *battle) Begin(h []byte) Answer {
 	g := b.new()
 	if g == nil {
 		return nil
 	}
-	return b.encrypt(g.Field())
+	return b.encrypt(h, g.Field())
 }
 
-func (b *battle) Click(x, y int, p []byte) Answer {
-	p = b.decrypt(p)
+func (b *battle) Click(x int, y int, p []byte, h []byte) Answer {
+	p = b.decrypt(h, p)
 	g := b.get(p)
 	if g == nil {
 		return nil
 	}
-	return b.encrypt(g.Click(x, y))
+	return b.encrypt(h, g.Click(x, y))
 }
 
-func (b *battle) Reset() {}
+func (b *battle) Reset([]byte) {}

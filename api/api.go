@@ -36,7 +36,7 @@ type reply struct {
 
 func (a *Application) Begin(w websocket.ResponseWriter, r *websocket.Request) {
 	j := json.NewEncoder(w)
-	p := a.Battle.Begin()
+	p := a.Battle.Begin(w.ID())
 	if p == nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	} else {
@@ -52,7 +52,7 @@ func (a *Application) Click(w websocket.ResponseWriter, r *websocket.Request) {
 	var q query
 	json.NewDecoder(r.Body).Decode(&q)
 	j := json.NewEncoder(w)
-	p := a.Battle.Click(q.X, q.Y, q.H)
+	p := a.Battle.Click(q.X, q.Y, q.H, w.ID())
 	if p == nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	} else {
@@ -65,6 +65,6 @@ func (a *Application) Click(w websocket.ResponseWriter, r *websocket.Request) {
 }
 
 func (a *Application) Reset(w websocket.ResponseWriter, r *websocket.Request) {
-	a.Battle.Reset()
+	a.Battle.Reset(w.ID())
 	w.WriteHeader(http.StatusOK)
 }

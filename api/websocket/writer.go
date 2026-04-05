@@ -3,9 +3,8 @@ package websocket
 import (
 	"bytes"
 	"fmt"
-	"net/http"
-
 	"github.com/gorilla/websocket"
+	"net/http"
 )
 
 type messageWriter struct {
@@ -18,6 +17,7 @@ type messageWriter struct {
 	header http.Header
 	dirty  bool
 	end    rune
+	me     []byte
 }
 
 func (w *messageWriter) Header() http.Header {
@@ -62,4 +62,8 @@ func (w *messageWriter) End() {
 	if w.dirty {
 		w.end = '#'
 	}
+}
+
+func (w *messageWriter) ID() []byte {
+	return w.me
 }

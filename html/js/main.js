@@ -21,6 +21,7 @@ function start() {
     modal.style.display = 'none'
     modal.className = 'modal'
     label.innerText = ''
+    history = []
     init()
     query(onBeginReply, seq++, 'GET', '/begin')
 }
