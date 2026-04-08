@@ -1,13 +1,16 @@
 package battle
 
-import (
-	"reflect"
-)
-
-type shooter func() (int, int, bool)
+type shooter struct {
+	u uint8
+	f func() (int, int, bool)
+}
 
 func (s shooter) shot() (int, int, bool) {
-	return s()
+	return s.f()
+}
+
+func (s shooter) id() uint8 {
+	return s.u
 }
 
 type game struct {
@@ -23,7 +26,7 @@ type game struct {
 func (g *game) initialize(hard uint8, sizes ...uint8) {
 	g.fields[0].initialize(sizes...)
 	g.fields[1].initialize(sizes...)
-	g.shooter = g.random
+	g.shooter = shooter{f: g.random}
 	g.ship = make(map[uint8]uint8)
 	for _, size := range sizes {
 		g.ship[size]++
@@ -108,7 +111,7 @@ func (g *game) random() (x int, y int, ok bool) {
 		x, y, ok = g.fields[0].random(0).XYZ()
 	}
 	if ok {
-		g.shooter = g.right
+		g.shooter = shooter{u: 1, f: g.right}
 	}
 	g.hits = g.hits[:0]
 	return
@@ -117,35 +120,35 @@ func (g *game) random() (x int, y int, ok bool) {
 func (g *game) right() (int, int, bool) {
 	x, y := g.xy()
 	x++
-	return g.next(x, y, g.left)
+	return g.next(x, y, shooter{u: 2, f: g.left})
 }
 
 func (g *game) left() (int, int, bool) {
 	x, y := g.xy()
 	x--
-	return g.next(x, y, g.down)
+	return g.next(x, y, shooter{u: 3, f: g.down})
 }
 
 func (g *game) down() (int, int, bool) {
 	x, y := g.xy()
 	y++
-	return g.next(x, y, g.up)
+	return g.next(x, y, shooter{u: 4, f: g.up})
 }
 
 func (g *game) up() (int, int, bool) {
 	x, y := g.xy()
 	y--
-	return g.next(x, y, g.random)
+	return g.next(x, y, shooter{u: 0, f: g.random})
 }
 
-func (g *game) next(x, y int, s shooter) (int, int, bool) {
+func (g *game) next(x, y int, shooter shooter) (int, int, bool) {
 	if g.fields[0].target(x, y) {
 		return x, y, true
 	}
 	if len(g.hits) > 0 {
 		g.hits = g.hits[:1]
 	}
-	g.shooter = s
+	g.shooter = shooter
 	return g.shot()
 }
 
@@ -172,22 +175,6 @@ func (g *game) alive() bool {
 
 func (g *game) state() []byte { return g.compress([]byte{}) }
 
-func (g *game) shooterID() byte {
-	ptr := reflect.ValueOf(g.shooter).Pointer()
-	switch ptr {
-	case reflect.ValueOf(g.right).Pointer():
-		return 1
-	case reflect.ValueOf(g.left).Pointer():
-		return 2
-	case reflect.ValueOf(g.down).Pointer():
-		return 3
-	case reflect.ValueOf(g.up).Pointer():
-		return 4
-	default:
-		return 0
-	}
-}
-
 func (g *game) compress(b []byte) []byte {
 	b = g.fields[0].compress(b)
 	b = g.fields[1].compress(b)
@@ -197,7 +184,7 @@ func (g *game) compress(b []byte) []byte {
 		m = max(m, k)
 	}
 
-	b = append(b, g.shooterID(), g.kill, g.deck, g.hard, m)
+	b = append(b, g.shooter.id(), g.kill, g.deck, g.hard, m)
 	for m > 0 {
 		b = append(b, g.ship[m])
 		m--
@@ -223,8 +210,8 @@ func (g *game) decompress(b []byte) []byte {
 		return nil
 	}
 
-	var s, m, h uint8
-	s, g.kill, g.deck, g.hard, m = b[0], b[1], b[2], b[3], b[4]
+	var u, m, h uint8
+	u, g.kill, g.deck, g.hard, m = b[0], b[1], b[2], b[3], b[4]
 	b = b[5:]
 
 	if len(b) < int(m) {
@@ -261,17 +248,19 @@ func (g *game) decompress(b []byte) []byte {
 		return nil
 	}
 
-	switch s {
+	switch u {
 	case 0:
-		g.shooter = g.random
+		g.shooter = shooter{u: 0, f: g.random}
 	case 1:
-		g.shooter = g.right
+		g.shooter = shooter{u: 1, f: g.right}
 	case 2:
-		g.shooter = g.left
+		g.shooter = shooter{u: 2, f: g.left}
 	case 3:
-		g.shooter = g.down
+		g.shooter = shooter{u: 3, f: g.down}
 	case 4:
-		g.shooter = g.up
+		g.shooter = shooter{u: 4, f: g.up}
+	default:
+		return nil
 	}
 
 	return b
