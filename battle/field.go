@@ -76,6 +76,8 @@ func (f *field) shot(n, x, y int) (points []point, hit bool) {
 			points = append(points, f.around(n, x, y)...)
 			hit = true
 		}
+	} else {
+		return
 	}
 	points = append(points, f.point(n, x, y))
 	return

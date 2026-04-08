@@ -32,7 +32,7 @@ func (g *game) initialize(hard uint8, sizes ...uint8) {
 	g.hard = hard
 }
 
-func (g *game) Field() *answer {
+func (g *game) Field() Answer {
 	var points []point
 	for n := range &g.fields {
 		for y := range &g.fields[n] {
@@ -68,8 +68,11 @@ func (a *answer) Next() bool {
 	return false
 }
 
-func (g *game) Click(x int, y int) *answer {
+func (g *game) Click(x int, y int) Answer {
 	points, hit := g.fields[1].shot(1, x, y)
+	if points == nil {
+		return nil
+	}
 	if !hit {
 		points = append(points, g.answer()...)
 	}
