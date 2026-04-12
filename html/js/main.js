@@ -129,8 +129,10 @@ function onReply(e = {
 }
 
 const effect = [
-    new Audio('../waves/boom1.wav'),
-    new Audio('../waves/boom0.wav'),
+    new Audio('../waves/boom.wav'),
+    new Audio('../waves/boom.wav'),
+    new Audio('../waves/game.wav'),
+    new Audio('../waves/lose.wav'),
 ];
 
 function play(i) {
