@@ -114,6 +114,8 @@ function onReply(e = {
     if (e.C === 2 || e.C === 3) {
         style.push(mod)
         click.push(field[e.F][e.Y][e.X])
+        if (e.C === 3)
+            play(e.F)
     }
     field[e.F][e.Y][e.X].className = style.join(' ')
     field[e.F][e.Y][e.X].onclick = undefined
@@ -124,6 +126,19 @@ function onReply(e = {
         if (!end[1])
             onEnd(1)
     }
+}
+
+const effect = [
+    new Audio('../waves/boom1.wav'),
+    new Audio('../waves/boom0.wav'),
+];
+
+function play(i) {
+    const sound = effect[i].cloneNode();
+    // sound.volume = 0.9;
+    // sound.playbackRate = 0.9 + Math.random() * 0.2;
+    sound.play();
+    sound.onended = () => sound.remove();
 }
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
