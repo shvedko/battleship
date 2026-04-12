@@ -101,14 +101,13 @@ func Test_game_compress_decompress(t *testing.T) {
 			{0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
 			{0, 1, 0, 0, 1, 0, 0, 0, 0, 0},
 			{0, 0, 0, 0, 1, 0, 0, 0, 0, 0}}},
-		hits:    []point{7330, 1550},
-		kill:    1,
-		ship:    map[uint8]uint8{1: 4, 2: 3, 3: 2, 4: 1},
-		deck:    19,
-		hard:    1,
-		shooter: nil,
+		hits: []point{7330, 1550},
+		kill: 1,
+		ship: map[uint8]uint8{1: 4, 2: 3, 3: 2, 4: 1},
+		deck: 19,
+		hard: 1,
 	}
-	q.shooter = q.up
+	q.shooter = shooter{4, q.up}
 
 	b := make([]byte, 0, 128)
 	b = q.compress(b)
@@ -132,10 +131,10 @@ func Test_game_compress_decompress(t *testing.T) {
 		t.Errorf("%v != %v", b, e)
 	}
 
-	i := q.shooterID()
-	j := p.shooterID()
-	q.shooter = nil
-	p.shooter = nil
+	i := q.shooter.id()
+	j := p.shooter.id()
+	q.shooter = shooter{}
+	p.shooter = shooter{}
 
 	if !reflect.DeepEqual(i, j) {
 		t.Errorf("%v != %v", i, j)

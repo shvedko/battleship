@@ -97,6 +97,9 @@ func (e *encryptor) H() []byte {
 }
 
 func (b *battle) encrypt(k []byte, a Answer) Answer {
+	if a == nil {
+		return nil
+	}
 	if b.coder != nil {
 		return &encryptor{Answer: a, coder: b.coder, key: k}
 	}
