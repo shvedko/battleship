@@ -72,7 +72,7 @@ func (a *Application) LoggingMiddleware(h http.Handler) http.Handler {
 		t := time.Now()
 		h.ServeHTTP(l, r)
 		if a.Logger != nil {
-			a.Logger.Println(r.Method, r.URL, r.Proto, l.Status, l.Length, time.Now().Sub(t))
+			a.Logger.Println(r.RemoteAddr, r.Method, r.URL, r.Proto, l.Status, l.Length, time.Now().Sub(t))
 		}
 	})
 }
