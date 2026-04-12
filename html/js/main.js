@@ -88,11 +88,15 @@ function onClick(x = -1, y = -1) {
     query(onNewReply, seq++, 'GET', '/click', {X: x, Y: y, H: history.at(-1)})
 }
 
-function onNewReply(e) {
-    onReply(e, 'new')
+async function onNewReply(e) {
+    semaphore = semaphore.then(async () => {
+        onReply(e, 'new')
+        await sleep(20)
+    }).catch(err => console.error("onNewReply:", err));
 }
 
 let history = []
+let semaphore = Promise.resolve();
 
 function onReply(e = {
     F: -1,
@@ -121,6 +125,8 @@ function onReply(e = {
             onEnd(1)
     }
 }
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 let seq = 0
 let handle
