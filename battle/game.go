@@ -79,6 +79,9 @@ func (g *game) Click(x int, y int) Answer {
 	if !hit {
 		points = append(points, g.answer()...)
 	}
+	if g.end() {
+		points = append(points, g.fields[1].find(1, fieldShip)...)
+	}
 	return &answer{points: points, state: g.state()}
 }
 

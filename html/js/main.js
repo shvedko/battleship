@@ -1,5 +1,6 @@
 const modal = document.getElementById('win');
 const label = document.getElementById('congratulation');
+const table = document.getElementById('computer');
 
 function onEnd(e = -1) {
     if (e === -1)
@@ -82,6 +83,7 @@ function reply(p = ['']) {
 }
 
 function onClick(x = -1, y = -1) {
+    table.classList.add('disabled')
     for (const i of click) {
         i.className = i.className.toString().split(' ')[0]
     }
@@ -110,6 +112,7 @@ function onReply(e = {
     let style = [clazz[e.C]]
     if (e.H) {
         history.push(e.H)
+        table.classList.remove('disabled')
     }
     if (e.C === 2 || e.C === 3) {
         style.push(mod)
@@ -137,8 +140,6 @@ const effect = [
 
 function play(i) {
     const sound = effect[i].cloneNode();
-    // sound.volume = 0.9;
-    // sound.playbackRate = 0.9 + Math.random() * 0.2;
     sound.play();
     sound.onended = () => sound.remove();
 }

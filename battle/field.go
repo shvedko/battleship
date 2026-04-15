@@ -276,3 +276,19 @@ func (f *field) decompress(b []byte) []byte {
 	}
 	return b[n:]
 }
+
+func (f *field) find(n int, types ...uint8) (points []point) {
+	var m int
+	for _, c := range types {
+		m |= 1 << c
+	}
+	for i := range f {
+		for j := range &f[i] {
+			b := 1 << f.raw(j, i)
+			if m&b != 0 {
+				points = append(points, f.point(n, j, i))
+			}
+		}
+	}
+	return
+}

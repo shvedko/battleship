@@ -12,7 +12,11 @@ func gameOne(h uint8) (n int, m int) {
 	g.initialize(h, 4, 3, 3, 2, 2, 2)
 	for g.alive() {
 		p := g.answer()
-		n += len(p)
+		for i := range p {
+			if p[i].F() == 0 && p[i].C() != fieldOpen {
+				n++
+			}
+		}
 		m++
 	}
 	return
@@ -112,8 +116,6 @@ func Test_game_compress_decompress(t *testing.T) {
 	b := make([]byte, 0, 128)
 	b = q.compress(b)
 
-	t.Log(b, len(b))
-
 	e := []byte{0, 16, 0, 0, 0, 16, 16, 0, 0, 0, 16, 16, 16, 0, 16, 0, 0, 0, 0, 16, 0, 1, 0, 0, 0, 1, 1, 0, 17, 17, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 1, 16, 16, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 17, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 17, 17, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 16, 0, 0, 0, 0, 16, 0, 0, 4, 1, 19, 1, 4, 1, 2, 3, 4, 2, 28, 162, 6, 14}
 	if !reflect.DeepEqual(b, e) {
 		t.Errorf("%v != %v", b, e)
@@ -122,10 +124,6 @@ func Test_game_compress_decompress(t *testing.T) {
 
 	p := game{}
 	b = p.decompress(b)
-
-	t.Log(b, len(b))
-	t.Log(q)
-	t.Log(p)
 
 	if !reflect.DeepEqual(b, e) {
 		t.Errorf("%v != %v", b, e)
